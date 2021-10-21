@@ -1,5 +1,9 @@
+import 'dart:ffi';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:mpc_demo/native/mpc_sigs_lib.dart';
 
 void main() {
   runApp(ChangeNotifierProvider(
@@ -8,7 +12,20 @@ void main() {
   ));
 }
 
+String dlPlatformName(String name) {
+  if (Platform.isAndroid || Platform.isLinux) return 'lib$name.so';
+  if (Platform.isWindows) return '$name.dll';
+  if (Platform.isMacOS) return '$name.dylib';
+  throw Exception('Platform unsupported');
+}
+
+DynamicLibrary dlOpen(String name) {
+  if (Platform.isLinux) return DynamicLibrary.process();
+  return DynamicLibrary.open(dlPlatformName(name));
+}
+
 class Counter with ChangeNotifier {
+  final MpcSigsLib lib = MpcSigsLib(dlOpen('mpc_sigs'));
   int value = 0;
 
   void increment() {
