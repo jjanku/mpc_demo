@@ -1,6 +1,7 @@
 import 'dart:ffi';
 import 'dart:io';
 
+import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mpc_demo/native/mpc_sigs_lib.dart';
@@ -29,7 +30,22 @@ class Counter with ChangeNotifier {
   int value = 0;
 
   void increment() {
-    value += 1;
+    value = lib.increment(value);
+
+    final cstr = lib.to_cstring(value);
+    final str = cstr.cast<Utf8>().toDartString();
+    print(str);
+    final parsedNum = lib.free_cstring(cstr);
+    assert(parsedNum == value);
+
+    final text = 'Goodbye world'.toNativeUtf8();
+    lib.print_cstring(text.cast<Int8>());
+    malloc.free(text);
+
+    final robj = lib.robject_new();
+    lib.robject_change(robj);
+    lib.robject_free(robj);
+
     notifyListeners();
   }
 }
