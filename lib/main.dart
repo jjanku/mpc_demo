@@ -32,19 +32,19 @@ class Counter with ChangeNotifier {
   void increment() {
     value = lib.increment(value);
 
-    final cstr = lib.to_cstring(value);
-    final str = cstr.cast<Utf8>().toDartString();
-    print(str);
-    final parsedNum = lib.free_cstring(cstr);
-    assert(parsedNum == value);
+    using((Arena alloc) {
+      final cstr = lib.to_cstring(value);
+      final str = cstr.cast<Utf8>().toDartString();
+      print(str);
+      final parsedNum = lib.free_cstring(cstr);
+      assert(parsedNum == value);
 
-    final text = 'Goodbye world'.toNativeUtf8();
-    lib.print_cstring(text.cast<Int8>());
-    malloc.free(text);
+      final text = 'Goodbye world'.toNativeUtf8(allocator: alloc);
+      lib.print_cstring(text.cast<Int8>());
 
-    final robj = lib.robject_new();
-    lib.robject_change(robj);
-    lib.robject_free(robj);
+      final robj = alloc.using(lib.robject_new(), lib.robject_free);
+      lib.robject_change(robj);
+    });
 
     notifyListeners();
   }
