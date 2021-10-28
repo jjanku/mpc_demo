@@ -1,4 +1,4 @@
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: camel_case_types, non_constant_identifier_names
 
 // AUTO GENERATED FILE, DO NOT EDIT.
 //
@@ -112,6 +112,24 @@ class MpcSigsLib {
           'robject_free');
   late final _robject_free =
       _robject_freePtr.asFunction<void Function(ffi.Pointer<RObject>)>();
+
+  int sum_array(
+    ffi.Pointer<ffi.Uint8> data,
+    int len,
+  ) {
+    return _sum_array(
+      data,
+      len,
+    );
+  }
+
+  late final _sum_arrayPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Uint32 Function(ffi.Pointer<ffi.Uint8>, uintptr_t)>>('sum_array');
+  late final _sum_array =
+      _sum_arrayPtr.asFunction<int Function(ffi.Pointer<ffi.Uint8>, int)>();
 }
 
 class RObject extends ffi.Opaque {}
+
+typedef uintptr_t = ffi.Uint64;

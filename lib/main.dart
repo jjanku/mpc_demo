@@ -1,5 +1,6 @@
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +45,12 @@ class Counter with ChangeNotifier {
 
       final robj = alloc.using(lib.robject_new(), lib.robject_free);
       lib.robject_change(robj);
+
+      const len = 4;
+      final arr = alloc<Uint8>(len);
+      final list = arr.asTypedList(len);
+      list.setAll(0, [1, 2, 3, 4]);
+      print("Sum is ${lib.sum_array(arr, len)}");
     });
 
     notifyListeners();
