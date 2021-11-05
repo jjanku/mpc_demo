@@ -1,6 +1,6 @@
 import 'dart:ffi';
 import 'dart:io';
-import 'dart:typed_data';
+import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
@@ -26,12 +26,32 @@ DynamicLibrary dlOpen(String name) {
   return DynamicLibrary.open(dlPlatformName(name));
 }
 
-class Counter with ChangeNotifier {
-  final MpcSigsLib lib = MpcSigsLib(dlOpen('mpc_sigs'));
-  int value = 0;
+class Worker {
+  final ReceivePort _receivePort;
+  final SendPort _sendPort;
 
-  void increment() {
-    value = lib.increment(value);
+  final MpcSigsLib lib = MpcSigsLib(dlOpen('mpc_sigs'));
+
+  Worker(this._receivePort, this._sendPort) {
+    _receivePort.listen(_handleMessage);
+  }
+
+  void _handleMessage(dynamic message) {
+    if (message is int) {
+      _doWork(message);
+    }
+  }
+
+  static void main(SendPort sendPort) {
+    // establish 2-way communication
+    final receivePort = ReceivePort();
+    sendPort.send(receivePort.sendPort);
+
+    Worker(receivePort, sendPort);
+  }
+
+  void _doWork(int value) {
+    // lib.block(500);
 
     using((Arena alloc) {
       final cstr = lib.to_cstring(value);
@@ -53,7 +73,64 @@ class Counter with ChangeNotifier {
       print("Sum is ${lib.sum_array(arr, len)}");
     });
 
+    _sendPort.send(lib.increment(value));
+  }
+}
+
+typedef OnResultListener = void Function(int result);
+
+class WorkManager {
+  Isolate? _isolate;
+  final ReceivePort _receivePort;
+  SendPort? _sendPort;
+
+  final OnResultListener onResultListener;
+
+  WorkManager(this.onResultListener) : _receivePort = ReceivePort() {
+    _receivePort.listen(_handleMessage);
+    _initIsolate();
+  }
+
+  Future<void> _initIsolate() async {
+    _isolate = await Isolate.spawn(Worker.main, _receivePort.sendPort);
+  }
+
+  void stop() {
+    _isolate?.kill(priority: Isolate.immediate);
+    _isolate = null;
+  }
+
+  void work(int value) {
+    _sendPort?.send(value);
+  }
+
+  void _handleMessage(dynamic message) {
+    if (message is SendPort) {
+      _sendPort = message;
+      return;
+    }
+
+    if (message is int) {
+      onResultListener(message);
+    }
+  }
+}
+
+class Counter with ChangeNotifier {
+  int value = 0;
+  late final WorkManager _manager;
+
+  Counter() {
+    _manager = WorkManager(_incrementResult);
+  }
+
+  void _incrementResult(int result) {
+    value = result;
     notifyListeners();
+  }
+
+  void increment() {
+    _manager.work(value);
   }
 }
 

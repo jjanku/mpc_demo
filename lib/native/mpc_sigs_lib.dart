@@ -128,6 +128,18 @@ class MpcSigsLib {
           ffi.Uint32 Function(ffi.Pointer<ffi.Uint8>, uintptr_t)>>('sum_array');
   late final _sum_array =
       _sum_arrayPtr.asFunction<int Function(ffi.Pointer<ffi.Uint8>, int)>();
+
+  void block(
+    int millis,
+  ) {
+    return _block(
+      millis,
+    );
+  }
+
+  late final _blockPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Uint64)>>('block');
+  late final _block = _blockPtr.asFunction<void Function(int)>();
 }
 
 class RObject extends ffi.Opaque {}
