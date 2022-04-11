@@ -7,7 +7,7 @@ import 'package:grpc/grpc.dart';
 import 'package:path/path.dart' as path_pkg;
 
 import '../file_storage.dart';
-import '../grpc/generated/mpc.pbgrpc.dart';
+import '../grpc/generated/mpc.pbgrpc.dart' as rpc;
 import '../native/dylib_manager.dart';
 
 class Group {
@@ -68,7 +68,7 @@ class MpcModel with ChangeNotifier {
   final List<SignedFile> files = [];
 
   late ClientChannel _channel;
-  late MPCClient _client;
+  late rpc.MPCClient _client;
   late Cosigner thisDevice;
 
   Timer? _pollTimer;
@@ -91,12 +91,12 @@ class MpcModel with ChangeNotifier {
       ),
     );
 
-    _client = MPCClient(_channel);
+    _client = rpc.MPCClient(_channel);
 
     thisDevice = Cosigner.random(name, CosignerType.app);
 
     final resp = await _client.register(
-      RegistrationRequest(id: thisDevice.id, name: name),
+      rpc.RegistrationRequest(id: thisDevice.id, name: name),
     );
     if (resp.hasFailure()) throw Exception(resp.failure);
 
@@ -116,14 +116,14 @@ class MpcModel with ChangeNotifier {
   }
 
   Future<Iterable<Cosigner>> getRegistered() async {
-    final devices = await _client.getDevices(DevicesRequest());
+    final devices = await _client.getDevices(rpc.DevicesRequest());
     return devices.devices
         .map((device) => Cosigner(device.name, device.id, CosignerType.app));
   }
 
   Future<void> addGroup(
       String name, List<Cosigner> members, int threshold) async {
-    final task = await _client.group(GroupRequest(
+    final rpcTask = await _client.group(rpc.GroupRequest(
       deviceIds: members.map((m) => m.id),
       name: name,
       threshold: threshold,
@@ -134,11 +134,11 @@ class MpcModel with ChangeNotifier {
 
   Future<void> sign(String path, Group group) async {
     final file = SignedFile(path, group);
-    final task = await _client.sign(await _encodeSignRequest(file));
+    final rpcTask = await _client.sign(await _encodeSignRequest(file));
     notifyListeners();
   }
 
-  Future<void> _processTasks(Tasks tasks) async {}
+  Future<void> _processTasks(rpc.Tasks rpcTasks) async {}
 
   void _startPoll() {
     if (_pollTimer != null) return;
@@ -152,17 +152,17 @@ class MpcModel with ChangeNotifier {
 
   Future<void> _poll(Timer timer) async {}
 
-  Future<SignRequest> _encodeSignRequest(SignedFile file) async {
+  Future<rpc.SignRequest> _encodeSignRequest(SignedFile file) async {
     // FIXME: oom for large files
     final bytes = await File(file.path).readAsBytes();
 
-    return SignRequest(groupId: file.group.id, data: bytes);
+    return rpc.SignRequest(groupId: file.group.id, data: bytes);
   }
 
-  Future<SignedFile> _decodeSignRequest(Task task) async {
+  Future<SignedFile> _decodeSignRequest(rpc.Task rpcTask) async {
     String baseName = 'filename';
     String path = await _fileStorage.getTmpFilePath(baseName);
-    await File(path).writeAsBytes(task.data, flush: true);
+    await File(path).writeAsBytes(rpcTask.data, flush: true);
     throw UnimplementedError();
   }
 
