@@ -5,6 +5,7 @@ import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 
 import '../model/mpc_model.dart';
+import '../model/tasks.dart';
 import '../routes.dart';
 import 'dismissible.dart';
 
@@ -140,10 +141,10 @@ class _HomePageState extends State<HomePage> {
     model.signRequests.listen(_showSignRequest);
   }
 
-  void _showGroupRequest(Group group) {
+  void _showGroupRequest(GroupTask task) {
     ScaffoldMessenger.of(context).showMaterialBanner(
       MaterialBanner(
-        content: Text('Do you want to join group ${group.name}?'),
+        content: Text('Do you want to join group ${task.group.name}?'),
         leading: const Icon(Icons.group_add),
         actions: [
           TextButton(
@@ -165,7 +166,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showSignRequest(SignedFile file) {
+  void _showSignRequest(SignTask task) {
+    SignedFile file = task.file;
     ScaffoldMessenger.of(context).showMaterialBanner(
       MaterialBanner(
         content: Text('Group ${file.group.name} asks you '

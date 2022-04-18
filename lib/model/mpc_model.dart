@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -7,9 +8,11 @@ import 'package:grpc/grpc.dart';
 import '../file_storage.dart';
 import '../grpc/generated/mpc.pbgrpc.dart' as rpc;
 import '../native/dylib_manager.dart';
+import '../util/uuid.dart';
 import 'cosigner.dart';
 import 'group.dart';
 import 'signed_file.dart';
+import 'tasks.dart';
 
 export 'cosigner.dart';
 export 'group.dart';
@@ -25,14 +28,16 @@ class MpcModel with ChangeNotifier {
 
   Timer? _pollTimer;
 
-  final StreamController<Group> _groupReqsController = StreamController();
-  Stream<Group> get groupRequests => _groupReqsController.stream;
+  final StreamController<GroupTask> _groupReqsController = StreamController();
+  Stream<GroupTask> get groupRequests => _groupReqsController.stream;
 
-  final StreamController<SignedFile> _signReqsController = StreamController();
-  Stream<SignedFile> get signRequests => _signReqsController.stream;
+  final StreamController<SignTask> _signReqsController = StreamController();
+  Stream<SignTask> get signRequests => _signReqsController.stream;
 
   final _fileStorage = FileStorage();
   final DylibManager _dylibManager = DylibManager();
+
+  final Map<Uuid, MpcTask> _tasks = HashMap();
 
   Future<void> register(String name, String host) async {
     _channel = ClientChannel(
