@@ -21,6 +21,69 @@ class MpcSigsLib {
           lookup)
       : _lookup = lookup;
 
+  ffi.Pointer<ProtoWrapper> protocol_new(
+    int alg,
+  ) {
+    return _protocol_new(
+      alg,
+    );
+  }
+
+  late final _protocol_newPtr = _lookup<
+          ffi.NativeFunction<ffi.Pointer<ProtoWrapper> Function(ffi.Int32)>>(
+      'protocol_new');
+  late final _protocol_new =
+      _protocol_newPtr.asFunction<ffi.Pointer<ProtoWrapper> Function(int)>();
+
+  Buffer protocol_update(
+    ffi.Pointer<ProtoWrapper> proto,
+    ffi.Pointer<ffi.Uint8> data,
+    int len,
+  ) {
+    return _protocol_update(
+      proto,
+      data,
+      len,
+    );
+  }
+
+  late final _protocol_updatePtr = _lookup<
+      ffi.NativeFunction<
+          Buffer Function(ffi.Pointer<ProtoWrapper>, ffi.Pointer<ffi.Uint8>,
+              uintptr_t)>>('protocol_update');
+  late final _protocol_update = _protocol_updatePtr.asFunction<
+      Buffer Function(
+          ffi.Pointer<ProtoWrapper>, ffi.Pointer<ffi.Uint8>, int)>();
+
+  ffi.Pointer<GroupWrapper> protocol_result_group(
+    ffi.Pointer<ProtoWrapper> proto,
+  ) {
+    return _protocol_result_group(
+      proto,
+    );
+  }
+
+  late final _protocol_result_groupPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<GroupWrapper> Function(
+              ffi.Pointer<ProtoWrapper>)>>('protocol_result_group');
+  late final _protocol_result_group = _protocol_result_groupPtr.asFunction<
+      ffi.Pointer<GroupWrapper> Function(ffi.Pointer<ProtoWrapper>)>();
+
+  void protocol_free(
+    ffi.Pointer<ProtoWrapper> proto,
+  ) {
+    return _protocol_free(
+      proto,
+    );
+  }
+
+  late final _protocol_freePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ProtoWrapper>)>>(
+          'protocol_free');
+  late final _protocol_free =
+      _protocol_freePtr.asFunction<void Function(ffi.Pointer<ProtoWrapper>)>();
+
   ffi.Pointer<CertKey> cert_key_new() {
     return _cert_key_new();
   }
@@ -76,4 +139,21 @@ class MpcSigsLib {
       .asFunction<ffi.Pointer<ffi.Void> Function(ffi.Pointer<CertKey>)>();
 }
 
+abstract class Algorithm {
+  static const int Gg18 = 0;
+}
+
 class CertKey extends ffi.Opaque {}
+
+class GroupWrapper extends ffi.Opaque {}
+
+class ProtoWrapper extends ffi.Opaque {}
+
+class Buffer extends ffi.Struct {
+  external ffi.Pointer<ffi.Uint8> ptr;
+
+  @uintptr_t()
+  external int len;
+}
+
+typedef uintptr_t = ffi.Uint64;
