@@ -152,6 +152,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
               // TODO: join group
+              context.read<MpcModel>().approveTask(task);
             },
           ),
           TextButton(

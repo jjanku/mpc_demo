@@ -19,6 +19,7 @@ export 'group.dart';
 export 'signed_file.dart';
 
 class MpcModel with ChangeNotifier {
+  // FIXME: make these private
   final List<Group> groups = [];
   final List<SignedFile> files = [];
 
@@ -86,6 +87,15 @@ class MpcModel with ChangeNotifier {
       threshold: threshold,
     ));
 
+    // FIXME: maybe the group should be added right when the user requests it?
+    // FIXME: repeptition
+    final uuid = Uuid(rpcTask.id);
+    final group = Group(name, members, threshold);
+    final task = GroupTask(uuid, group);
+    groups.add(group);
+    _tasks[uuid] = task;
+
+    approveTask(task);
     notifyListeners();
   }
 
@@ -95,7 +105,66 @@ class MpcModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _processTasks(rpc.Tasks rpcTasks) async {}
+  Future<void> approveTask(MpcTask task) async {
+    // FIXME:
+    await _sendUpdate(task, [1]);
+  }
+
+  MpcTask _handleNewTask(rpc.Task rpcTask) {
+    assert(rpcTask.state == rpc.Task_TaskState.CREATED);
+    assert(rpcTask.round == 0);
+
+    final uuid = Uuid(rpcTask.id);
+    late MpcTask task;
+
+    switch (rpcTask.type) {
+      case rpc.Task_TaskType.GROUP:
+        {
+          final req = rpc.GroupRequest.fromBuffer(rpcTask.data);
+          // TODO: handle protocol, members
+          final group = Group(req.name, [], req.threshold);
+          task = GroupTask(uuid, group);
+          groups.add(group);
+          break;
+        }
+      case rpc.Task_TaskType.SIGN:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+    }
+
+    _tasks[uuid] = task;
+    if (task is GroupTask) _groupReqsController.add(task);
+    if (task is SignTask) _signReqsController.add(task);
+    notifyListeners();
+    return task;
+  }
+
+  Future<void> _updateTask(MpcTask task, rpc.Task rpcTask) async {
+    // TODO: check status
+    final update = await task.update(rpcTask.round, rpcTask.data);
+    if (update == null) return;
+    await _sendUpdate(task, update);
+  }
+
+  Future<rpc.Resp> _sendUpdate(MpcTask task, List<int> data) async =>
+      _client.updateTask(rpc.TaskUpdate(
+        device: thisDevice.id,
+        task: task.id.bytes,
+        data: data,
+      ));
+
+  Future<void> _processTasks(rpc.Tasks rpcTasks) async {
+    for (final rpcTask in rpcTasks.tasks) {
+      final uuid = Uuid(rpcTask.id);
+      final task = _tasks[uuid];
+
+      if (task == null) {
+        _handleNewTask(rpcTask);
+      } else {
+        _updateTask(task, rpcTask);
+      }
+    }
+  }
 
   void _startPoll() {
     if (_pollTimer != null) return;
@@ -107,7 +176,12 @@ class MpcModel with ChangeNotifier {
     _pollTimer = null;
   }
 
-  Future<void> _poll(Timer timer) async {}
+  Future<void> _poll(Timer timer) async {
+    final rpcTasks = await _client.getTasks(
+      rpc.TasksRequest(deviceId: thisDevice.id),
+    );
+    await _processTasks(rpcTasks);
+  }
 
   Future<rpc.SignRequest> _encodeSignRequest(SignedFile file) async {
     // FIXME: oom for large files
