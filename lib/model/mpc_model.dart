@@ -140,10 +140,16 @@ class MpcModel with ChangeNotifier {
   }
 
   Future<void> _updateTask(MpcTask task, rpc.Task rpcTask) async {
-    // TODO: check status
+    // TODO: check status for errors
     final update = await task.update(rpcTask.round, rpcTask.data);
     if (update == null) return;
     await _sendUpdate(task, update);
+  }
+
+  Future<void> _finishTask(MpcTask task, rpc.Task rpcTask) async {
+    await task.finish(rpcTask.data);
+    await _sendUpdate(task, [1]);
+    notifyListeners();
   }
 
   Future<rpc.Resp> _sendUpdate(MpcTask task, List<int> data) async =>
@@ -158,10 +164,16 @@ class MpcModel with ChangeNotifier {
       final uuid = Uuid(rpcTask.id);
       final task = _tasks[uuid];
 
+      // FIXME: also consider the state
+      // TODO: maybe add some kind of thread pool to move the code out of model?
       if (task == null) {
         _handleNewTask(rpcTask);
       } else {
-        _updateTask(task, rpcTask);
+        if (rpcTask.state == rpc.Task_TaskState.FINISHED) {
+          _finishTask(task, rpcTask);
+        } else {
+          _updateTask(task, rpcTask);
+        }
       }
     }
   }
