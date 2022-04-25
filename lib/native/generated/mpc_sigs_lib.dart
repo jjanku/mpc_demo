@@ -70,6 +70,21 @@ class MpcSigsLib {
   late final _protocol_result_group = _protocol_result_groupPtr.asFunction<
       ffi.Pointer<GroupWrapper> Function(ffi.Pointer<ProtoWrapper>)>();
 
+  ffi.Pointer<ProtoWrapper> group_sign(
+    ffi.Pointer<GroupWrapper> group,
+  ) {
+    return _group_sign(
+      group,
+    );
+  }
+
+  late final _group_signPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ProtoWrapper> Function(
+              ffi.Pointer<GroupWrapper>)>>('group_sign');
+  late final _group_sign = _group_signPtr.asFunction<
+      ffi.Pointer<ProtoWrapper> Function(ffi.Pointer<GroupWrapper>)>();
+
   void protocol_free(
     ffi.Pointer<ProtoWrapper> proto,
   ) {
