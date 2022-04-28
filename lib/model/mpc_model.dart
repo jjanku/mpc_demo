@@ -100,8 +100,20 @@ class MpcModel with ChangeNotifier {
   }
 
   Future<void> sign(String path, Group group) async {
-    final file = SignedFile(path, group);
-    final rpcTask = await _client.sign(await _encodeSignRequest(file));
+    // final rpcTask = await _client.sign(await _encodeSignRequest(file));
+    final rpcTask = await _client.sign(rpc.SignRequest(
+      groupId: group.id,
+      data: [1, 2, 3, 4],
+    ));
+
+    // FIXME: so much repetition
+    final uuid = Uuid(rpcTask.id);
+    final file = SignedFile('FIXME', group);
+    final task = SignTask(uuid, file);
+    files.add(file);
+    _tasks[uuid] = task;
+
+    approveTask(task);
     notifyListeners();
   }
 
@@ -128,8 +140,14 @@ class MpcModel with ChangeNotifier {
           break;
         }
       case rpc.Task_TaskType.SIGN:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        {
+          final req = rpc.SignRequest.fromBuffer(rpcTask.data);
+          // FIXME: groups should probably be hashed by their id
+          final group = groups.firstWhere((g) => listEquals(g.id, req.groupId));
+          final file = SignedFile('FIXME', group);
+          task = SignTask(uuid, file);
+          files.add(file);
+        }
     }
 
     _tasks[uuid] = task;

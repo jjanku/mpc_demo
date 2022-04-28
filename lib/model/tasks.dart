@@ -34,6 +34,9 @@ abstract class MpcTask {
 // should we spawn a new worker for each task hoping it'll finish soon enough?
 // should we serialize/deserialize the context in each update?
 
+// actually it makes sense to spin up the worker once the task is approved,
+// assuming the devices don't go offline, the messages should come fairly quickly
+
 class GroupTask extends MpcTask {
   final Group group;
 
@@ -76,18 +79,34 @@ class GroupTask extends MpcTask {
 class SignTask extends MpcTask {
   final SignedFile file;
 
-  SignTask(Uuid uuid, this.file) : super(uuid);
+  Pointer<ProtoWrapper> _proto;
+
+  SignTask(Uuid uuid, this.file)
+      : _proto = mpcLib.group_sign(file.group.context),
+        super(uuid);
 
   @override
-  Future<List<int>?> update(int round, List<int> data) {
-    // TODO: implement update
-    throw UnimplementedError();
+  Future<List<int>?> update(int round, List<int> data) async {
+    // FIXME: this is just copy paste
+    if (round <= _round) return null;
+    _round = round;
+    // FIXME: this is safe as long as the round we receive is correct
+
+    final resp = await compute(
+      _updateProtocol,
+      ProtocolUpdate(_proto.address, data as Uint8List),
+    );
+    _proto = Pointer<ProtoWrapper>.fromAddress(resp.protoAddr);
+    return resp.data.materialize().asUint8List();
   }
 
   @override
-  Future<void> finish(List<int> data) {
+  Future<void> finish(List<int> data) async {
     // TODO: implement finish
-    throw UnimplementedError();
+    if (_status == TaskStatus.finished) return;
+    _status = TaskStatus.finished;
+
+    file.isFinished = true;
   }
 }
 
@@ -110,7 +129,7 @@ ProtocolUpdate _updateProtocol(ProtocolUpdate update) {
     var proto = Pointer<ProtoWrapper>.fromAddress(update.protoAddr);
     assert(proto != nullptr);
 
-    print('isolate: advance keygen');
+    print('isolate: update protocol');
     final outBuf = mpcLib.protocol_update(proto, buf, data.length);
 
     return ProtocolUpdate(
