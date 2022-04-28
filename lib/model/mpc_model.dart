@@ -95,7 +95,7 @@ class MpcModel with ChangeNotifier {
     groups.add(group);
     _tasks[uuid] = task;
 
-    approveTask(task);
+    approveTask(task, agree: true);
     notifyListeners();
   }
 
@@ -113,13 +113,13 @@ class MpcModel with ChangeNotifier {
     files.add(file);
     _tasks[uuid] = task;
 
-    approveTask(task);
+    approveTask(task, agree: true);
     notifyListeners();
   }
 
-  Future<void> approveTask(MpcTask task) async {
-    // FIXME:
-    await _sendUpdate(task, [1]);
+  Future<void> approveTask(MpcTask task, {required bool agree}) async {
+    final update = rpc.TaskAgreement(agreement: agree);
+    await _sendUpdate(task, update.writeToBuffer());
   }
 
   MpcTask _handleNewTask(rpc.Task rpcTask) {
@@ -166,7 +166,10 @@ class MpcModel with ChangeNotifier {
 
   Future<void> _finishTask(MpcTask task, rpc.Task rpcTask) async {
     await task.finish(rpcTask.data);
-    await _sendUpdate(task, [1]);
+
+    final update = rpc.TaskAcknowledgement();
+    await _sendUpdate(task, update.writeToBuffer());
+
     notifyListeners();
   }
 

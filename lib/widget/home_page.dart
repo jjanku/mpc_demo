@@ -151,14 +151,14 @@ class _HomePageState extends State<HomePage> {
             child: const Text('JOIN'),
             onPressed: () {
               ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-              context.read<MpcModel>().approveTask(task);
+              context.read<MpcModel>().approveTask(task, agree: true);
             },
           ),
           TextButton(
             child: const Text('DECLINE'),
             onPressed: () {
               ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-              // TODO: decline request
+              context.read<MpcModel>().approveTask(task, agree: false);
             },
           ),
         ],
@@ -184,13 +184,14 @@ class _HomePageState extends State<HomePage> {
             child: const Text('SIGN'),
             onPressed: () {
               ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-              context.read<MpcModel>().approveTask(task);
+              context.read<MpcModel>().approveTask(task, agree: true);
             },
           ),
           TextButton(
             child: const Text('IGNORE'),
             onPressed: () {
               ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+              // TODO: what to do here?
             },
           ),
         ],
