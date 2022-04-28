@@ -1342,3 +1342,112 @@ class Resp extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearFailure() => clearField(2);
 }
+
+class TaskAgreement extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      const $core.bool.fromEnvironment('protobuf.omit_message_names')
+          ? ''
+          : 'TaskAgreement',
+      package: const $pb.PackageName(
+          const $core.bool.fromEnvironment('protobuf.omit_message_names')
+              ? ''
+              : 'meesign'),
+      createEmptyInstance: create)
+    ..aOB(
+        1,
+        const $core.bool.fromEnvironment('protobuf.omit_field_names')
+            ? ''
+            : 'agreement')
+    ..hasRequiredFields = false;
+
+  TaskAgreement._() : super();
+  factory TaskAgreement({
+    $core.bool? agreement,
+  }) {
+    final _result = create();
+    if (agreement != null) {
+      _result.agreement = agreement;
+    }
+    return _result;
+  }
+  factory TaskAgreement.fromBuffer($core.List<$core.int> i,
+          [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(i, r);
+  factory TaskAgreement.fromJson($core.String i,
+          [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(i, r);
+  @$core.Deprecated('Using this can add significant overhead to your binary. '
+      'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+      'Will be removed in next major version')
+  TaskAgreement clone() => TaskAgreement()..mergeFromMessage(this);
+  @$core.Deprecated('Using this can add significant overhead to your binary. '
+      'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+      'Will be removed in next major version')
+  TaskAgreement copyWith(void Function(TaskAgreement) updates) =>
+      super.copyWith((message) => updates(message as TaskAgreement))
+          as TaskAgreement; // ignore: deprecated_member_use
+  $pb.BuilderInfo get info_ => _i;
+  @$core.pragma('dart2js:noInline')
+  static TaskAgreement create() => TaskAgreement._();
+  TaskAgreement createEmptyInstance() => create();
+  static $pb.PbList<TaskAgreement> createRepeated() =>
+      $pb.PbList<TaskAgreement>();
+  @$core.pragma('dart2js:noInline')
+  static TaskAgreement getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<TaskAgreement>(create);
+  static TaskAgreement? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get agreement => $_getBF(0);
+  @$pb.TagNumber(1)
+  set agreement($core.bool v) {
+    $_setBool(0, v);
+  }
+
+  @$pb.TagNumber(1)
+  $core.bool hasAgreement() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearAgreement() => clearField(1);
+}
+
+class TaskAcknowledgement extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      const $core.bool.fromEnvironment('protobuf.omit_message_names')
+          ? ''
+          : 'TaskAcknowledgement',
+      package: const $pb.PackageName(
+          const $core.bool.fromEnvironment('protobuf.omit_message_names')
+              ? ''
+              : 'meesign'),
+      createEmptyInstance: create)
+    ..hasRequiredFields = false;
+
+  TaskAcknowledgement._() : super();
+  factory TaskAcknowledgement() => create();
+  factory TaskAcknowledgement.fromBuffer($core.List<$core.int> i,
+          [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(i, r);
+  factory TaskAcknowledgement.fromJson($core.String i,
+          [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(i, r);
+  @$core.Deprecated('Using this can add significant overhead to your binary. '
+      'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+      'Will be removed in next major version')
+  TaskAcknowledgement clone() => TaskAcknowledgement()..mergeFromMessage(this);
+  @$core.Deprecated('Using this can add significant overhead to your binary. '
+      'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+      'Will be removed in next major version')
+  TaskAcknowledgement copyWith(void Function(TaskAcknowledgement) updates) =>
+      super.copyWith((message) => updates(message as TaskAcknowledgement))
+          as TaskAcknowledgement; // ignore: deprecated_member_use
+  $pb.BuilderInfo get info_ => _i;
+  @$core.pragma('dart2js:noInline')
+  static TaskAcknowledgement create() => TaskAcknowledgement._();
+  TaskAcknowledgement createEmptyInstance() => create();
+  static $pb.PbList<TaskAcknowledgement> createRepeated() =>
+      $pb.PbList<TaskAcknowledgement>();
+  @$core.pragma('dart2js:noInline')
+  static TaskAcknowledgement getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<TaskAcknowledgement>(create);
+  static TaskAcknowledgement? _defaultInstance;
+}

@@ -104,3 +104,9 @@ message Resp {
         string failure = 2;
     }
 }
+
+message TaskAgreement {
+    bool agreement = 1;
+};
+
+message TaskAcknowledgement {};

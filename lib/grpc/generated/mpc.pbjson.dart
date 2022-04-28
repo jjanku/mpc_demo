@@ -301,3 +301,22 @@ const Resp$json = const {
 /// Descriptor for `Resp`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List respDescriptor = $convert.base64Decode(
     'CgRSZXNwEhoKB3N1Y2Nlc3MYASABKAlIAFIHc3VjY2VzcxIaCgdmYWlsdXJlGAIgASgJSABSB2ZhaWx1cmVCCQoHdmFyaWFudA==');
+@$core.Deprecated('Use taskAgreementDescriptor instead')
+const TaskAgreement$json = const {
+  '1': 'TaskAgreement',
+  '2': const [
+    const {'1': 'agreement', '3': 1, '4': 1, '5': 8, '10': 'agreement'},
+  ],
+};
+
+/// Descriptor for `TaskAgreement`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List taskAgreementDescriptor = $convert.base64Decode(
+    'Cg1UYXNrQWdyZWVtZW50EhwKCWFncmVlbWVudBgBIAEoCFIJYWdyZWVtZW50');
+@$core.Deprecated('Use taskAcknowledgementDescriptor instead')
+const TaskAcknowledgement$json = const {
+  '1': 'TaskAcknowledgement',
+};
+
+/// Descriptor for `TaskAcknowledgement`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List taskAcknowledgementDescriptor =
+    $convert.base64Decode('ChNUYXNrQWNrbm93bGVkZ2VtZW50');
