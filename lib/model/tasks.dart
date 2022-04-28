@@ -5,9 +5,9 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 
-import '../native/dylib_worker.dart';
 import '../native/generated/mpc_sigs_lib.dart';
 
+import '../native/worker.dart';
 import '../util/uuid.dart';
 import 'group.dart';
 import 'signed_file.dart';

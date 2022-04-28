@@ -7,7 +7,6 @@ import 'package:grpc/grpc.dart';
 
 import '../file_storage.dart';
 import '../grpc/generated/mpc.pbgrpc.dart' as rpc;
-import '../native/dylib_manager.dart';
 import '../util/uuid.dart';
 import 'cosigner.dart';
 import 'group.dart';
@@ -36,7 +35,6 @@ class MpcModel with ChangeNotifier {
   Stream<SignTask> get signRequests => _signReqsController.stream;
 
   final _fileStorage = FileStorage();
-  final DylibManager _dylibManager = DylibManager();
 
   final Map<Uuid, MpcTask> _tasks = HashMap();
 
@@ -241,7 +239,7 @@ class MpcModel with ChangeNotifier {
     final signers = file.group.members.map((m) => '    - ${m.name}').join('\n');
     final msg = 'Signed using Meesign by:\n' + signers;
 
-    await _dylibManager.signPdf(file.path, outPath, message: msg);
+    // await _dylibManager.signPdf(file.path, outPath, message: msg);
     file.path = outPath;
   }
 }
