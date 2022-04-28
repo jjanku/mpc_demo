@@ -133,8 +133,13 @@ class MpcModel with ChangeNotifier {
       case rpc.Task_TaskType.GROUP:
         {
           final req = rpc.GroupRequest.fromBuffer(rpcTask.data);
-          // TODO: handle protocol, members
-          final group = Group(req.name, [], req.threshold);
+          final members = req.deviceIds
+              .map(
+                // TODO: fetch names from server
+                (id) => Cosigner('unknown', id, CosignerType.app),
+              )
+              .toList();
+          final group = Group(req.name, members, req.threshold);
           task = GroupTask(uuid, group);
           groups.add(group);
           break;
