@@ -3,10 +3,8 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:flutter/foundation.dart';
 
 import '../native/generated/mpc_sigs_lib.dart';
-
 import '../native/worker.dart';
 import '../util/uuid.dart';
 import 'group.dart';
@@ -14,52 +12,50 @@ import 'signed_file.dart';
 
 enum TaskStatus { unapproved, waiting, finished }
 
-final MpcSigsLib mpcLib = MpcSigsLib(dlOpen('mpc_sigs'));
-
 abstract class MpcTask {
   Uuid id;
   TaskStatus _status = TaskStatus.unapproved;
   int _round = 0;
+  late final Worker _worker;
 
   MpcTask(this.id);
 
-  Future<List<int>?> update(int round, List<int> data);
+  Future<List<int>?> update(int round, List<int> data) async {
+    if (round <= _round) return null;
+    _round = round;
+    // FIXME: this is safe as long as the round we receive is correct
+
+    if (_round == 1) await _initWorker();
+
+    final ProtocolUpdate resp = await _worker.enqueueRequest(
+      // FIXME: change types
+      ProtocolUpdate(data as Uint8List),
+    );
+
+    return resp.data.materialize().asUint8List();
+  }
+
+  Future<void> _initWorker();
+
   Future<void> finish(List<int> data);
 
   void approve() => _status = TaskStatus.waiting;
   TaskStatus get status => _status;
 }
 
-// TODO: need to rethink this in terms of persistence
-// should we spawn a new worker for each task hoping it'll finish soon enough?
-// should we serialize/deserialize the context in each update?
-
-// actually it makes sense to spin up the worker once the task is approved,
-// assuming the devices don't go offline, the messages should come fairly quickly
-
 class GroupTask extends MpcTask {
   final Group group;
 
-  Pointer<ProtoWrapper> _proto;
-
-  GroupTask(Uuid uuid, this.group)
-      : _proto = mpcLib.protocol_new(Algorithm.Gg18),
-        super(uuid) {
-    assert(_proto != nullptr);
-  }
+  GroupTask(Uuid uuid, this.group) : super(uuid);
 
   @override
-  Future<List<int>?> update(int round, List<int> data) async {
-    if (round <= _round) return null;
-    _round = round;
-    // FIXME: this is safe as long as the round we receive is correct
-
-    final resp = await compute(
-      _updateProtocol,
-      ProtocolUpdate(_proto.address, data as Uint8List),
+  Future<void> _initWorker() async {
+    _worker = Worker(
+      GroupWorkerThread.entryPoint,
+      debugName: 'group worker',
     );
-    _proto = Pointer<ProtoWrapper>.fromAddress(resp.protoAddr);
-    return resp.data.materialize().asUint8List();
+    await _worker.start();
+    await _worker.enqueueRequest(GroupInitMsg(Algorithm.Gg18));
   }
 
   @override
@@ -67,37 +63,23 @@ class GroupTask extends MpcTask {
     if (_status == TaskStatus.finished) return;
     _status = TaskStatus.finished;
 
+    await _worker.enqueueRequest(TaskFinishMsg());
+    _worker.stop();
     // FIXME: when to do copy when receiving data using grpc?
-    group.context = mpcLib.protocol_result_group(_proto);
+    // group.context = mpcLib.protocol_result_group(_proto);
     group.id = data;
-
-    mpcLib.protocol_free(_proto);
-    _proto = nullptr;
   }
 }
 
 class SignTask extends MpcTask {
   final SignedFile file;
 
-  Pointer<ProtoWrapper> _proto;
-
-  SignTask(Uuid uuid, this.file)
-      : _proto = mpcLib.group_sign(file.group.context),
-        super(uuid);
+  SignTask(Uuid uuid, this.file) : super(uuid);
 
   @override
-  Future<List<int>?> update(int round, List<int> data) async {
-    // FIXME: this is just copy paste
-    if (round <= _round) return null;
-    _round = round;
-    // FIXME: this is safe as long as the round we receive is correct
-
-    final resp = await compute(
-      _updateProtocol,
-      ProtocolUpdate(_proto.address, data as Uint8List),
-    );
-    _proto = Pointer<ProtoWrapper>.fromAddress(resp.protoAddr);
-    return resp.data.materialize().asUint8List();
+  Future<void> _initWorker() {
+    // TODO: implement _initWorker
+    throw UnimplementedError();
   }
 
   @override
@@ -110,31 +92,64 @@ class SignTask extends MpcTask {
   }
 }
 
+class GroupInitMsg {
+  int algorithm;
+  GroupInitMsg(this.algorithm);
+}
+
 class ProtocolUpdate {
-  int protoAddr;
   TransferableTypedData data;
 
-  ProtocolUpdate(this.protoAddr, Uint8List bytes)
+  ProtocolUpdate(Uint8List bytes)
       : data = TransferableTypedData.fromList([bytes]);
 }
 
-ProtocolUpdate _updateProtocol(ProtocolUpdate update) {
-  final data = update.data.materialize().asUint8List();
+class TaskFinishMsg {}
 
-  // TODO: can we avoid some of these copies?
-  return using((Arena alloc) {
-    final buf = alloc<Uint8>(data.length);
-    buf.asTypedList(data.length).setAll(0, data);
+final MpcSigsLib mpcLib = MpcSigsLib(dlOpen('mpc_sigs'));
 
-    var proto = Pointer<ProtoWrapper>.fromAddress(update.protoAddr);
-    assert(proto != nullptr);
+abstract class TaskWorkerThread extends WorkerThread {
+  Pointer<ProtoWrapper> _proto = nullptr;
 
-    print('isolate: update protocol');
-    final outBuf = mpcLib.protocol_update(proto, buf, data.length);
+  TaskWorkerThread(SendPort sendPort) : super(sendPort);
 
-    return ProtocolUpdate(
-      proto.address,
-      outBuf.ptr.asTypedList(outBuf.len),
-    );
-  });
+  ProtocolUpdate _updateProtocol(ProtocolUpdate update) {
+    assert(_proto != nullptr);
+    final data = update.data.materialize().asUint8List();
+
+    // TODO: can we avoid some of these copies?
+    return using((Arena alloc) {
+      final buf = alloc<Uint8>(data.length);
+      buf.asTypedList(data.length).setAll(0, data);
+
+      print('update protocol');
+      final outBuf = mpcLib.protocol_update(_proto, buf, data.length);
+
+      return ProtocolUpdate(
+        outBuf.ptr.asTypedList(outBuf.len),
+      );
+    });
+  }
+}
+
+class GroupWorkerThread extends TaskWorkerThread {
+  GroupWorkerThread(SendPort sendPort) : super(sendPort);
+
+  @override
+  handleMessage(message) {
+    if (message is GroupInitMsg) return _init(message);
+    if (message is ProtocolUpdate) return _updateProtocol(message);
+    if (message is TaskFinishMsg) return _finish();
+    assert(false);
+  }
+
+  void _init(GroupInitMsg message) {
+    _proto = mpcLib.protocol_new(message.algorithm);
+  }
+
+  void _finish() {}
+
+  static void entryPoint(SendPort sendPort) {
+    GroupWorkerThread(sendPort);
+  }
 }
