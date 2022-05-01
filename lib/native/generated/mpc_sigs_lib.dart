@@ -55,35 +55,19 @@ class MpcSigsLib {
       Buffer Function(
           ffi.Pointer<ProtoWrapper>, ffi.Pointer<ffi.Uint8>, int)>();
 
-  ffi.Pointer<GroupWrapper> protocol_result_group(
+  Buffer protocol_result(
     ffi.Pointer<ProtoWrapper> proto,
   ) {
-    return _protocol_result_group(
+    return _protocol_result(
       proto,
     );
   }
 
-  late final _protocol_result_groupPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<GroupWrapper> Function(
-              ffi.Pointer<ProtoWrapper>)>>('protocol_result_group');
-  late final _protocol_result_group = _protocol_result_groupPtr.asFunction<
-      ffi.Pointer<GroupWrapper> Function(ffi.Pointer<ProtoWrapper>)>();
-
-  ffi.Pointer<ProtoWrapper> group_sign(
-    ffi.Pointer<GroupWrapper> group,
-  ) {
-    return _group_sign(
-      group,
-    );
-  }
-
-  late final _group_signPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<ProtoWrapper> Function(
-              ffi.Pointer<GroupWrapper>)>>('group_sign');
-  late final _group_sign = _group_signPtr.asFunction<
-      ffi.Pointer<ProtoWrapper> Function(ffi.Pointer<GroupWrapper>)>();
+  late final _protocol_resultPtr =
+      _lookup<ffi.NativeFunction<Buffer Function(ffi.Pointer<ProtoWrapper>)>>(
+          'protocol_result');
+  late final _protocol_result = _protocol_resultPtr
+      .asFunction<Buffer Function(ffi.Pointer<ProtoWrapper>)>();
 
   void protocol_free(
     ffi.Pointer<ProtoWrapper> proto,
@@ -98,6 +82,25 @@ class MpcSigsLib {
           'protocol_free');
   late final _protocol_free =
       _protocol_freePtr.asFunction<void Function(ffi.Pointer<ProtoWrapper>)>();
+
+  ffi.Pointer<ProtoWrapper> group_sign(
+    int alg,
+    ffi.Pointer<ffi.Uint8> group_data,
+    int len,
+  ) {
+    return _group_sign(
+      alg,
+      group_data,
+      len,
+    );
+  }
+
+  late final _group_signPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ProtoWrapper> Function(
+              ffi.Int32, ffi.Pointer<ffi.Uint8>, uintptr_t)>>('group_sign');
+  late final _group_sign = _group_signPtr.asFunction<
+      ffi.Pointer<ProtoWrapper> Function(int, ffi.Pointer<ffi.Uint8>, int)>();
 
   ffi.Pointer<CertKey> cert_key_new() {
     return _cert_key_new();
@@ -159,8 +162,6 @@ abstract class Algorithm {
 }
 
 class CertKey extends ffi.Opaque {}
-
-class GroupWrapper extends ffi.Opaque {}
 
 class ProtoWrapper extends ffi.Opaque {}
 
