@@ -189,7 +189,7 @@ class MpcModel with ChangeNotifier {
       final task = _tasks[uuid];
 
       // FIXME: also consider the state
-      // TODO: maybe add some kind of thread pool to move the code out of model?
+      // TODO: maybe add some kind of task pool to move the code out of model?
       if (task == null) {
         _handleNewTask(rpcTask);
       } else {

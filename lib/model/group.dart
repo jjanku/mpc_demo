@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 
@@ -11,7 +12,7 @@ class Group {
   List<Cosigner> members;
   int threshold;
 
-  Pointer<GroupWrapper> context = nullptr;
+  Uint8List? context;
 
   bool get isFinished => id != null;
 

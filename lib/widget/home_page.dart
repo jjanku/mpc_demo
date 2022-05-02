@@ -207,6 +207,7 @@ class _HomePageState extends State<HomePage> {
           builder: (context, model, child) {
             return SimpleDialog(
               title: const Text('Select group'),
+              // FIXME: only finished groups!
               children: model.groups
                   .map((group) => SimpleDialogOption(
                         child: Text(group.name),

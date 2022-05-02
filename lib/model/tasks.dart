@@ -63,11 +63,15 @@ class GroupTask extends MpcTask {
     if (_status == TaskStatus.finished) return;
     _status = TaskStatus.finished;
 
-    await _worker.enqueueRequest(TaskFinishMsg());
-    _worker.stop();
+    final TransferableTypedData trans =
+        await _worker.enqueueRequest(TaskFinishMsg());
+
     // FIXME: when to do copy when receiving data using grpc?
     // group.context = mpcLib.protocol_result_group(_proto);
     group.id = data;
+    group.context = trans.materialize().asUint8List();
+
+    _worker.stop();
   }
 }
 
@@ -77,9 +81,15 @@ class SignTask extends MpcTask {
   SignTask(Uuid uuid, this.file) : super(uuid);
 
   @override
-  Future<void> _initWorker() {
-    // TODO: implement _initWorker
-    throw UnimplementedError();
+  Future<void> _initWorker() async {
+    _worker = Worker(
+      SignWorkerThread.entryPoint,
+      debugName: 'sign worker',
+    );
+    await _worker.start();
+    await _worker.enqueueRequest(
+      SignInitMsg(Algorithm.Gg18, file.group.context!, file.path),
+    );
   }
 
   @override
@@ -88,13 +98,26 @@ class SignTask extends MpcTask {
     if (_status == TaskStatus.finished) return;
     _status = TaskStatus.finished;
 
+    await _worker.enqueueRequest(TaskFinishMsg());
+
     file.isFinished = true;
+
+    _worker.stop();
   }
 }
 
 class GroupInitMsg {
   int algorithm;
   GroupInitMsg(this.algorithm);
+}
+
+class SignInitMsg {
+  int algorithm;
+  TransferableTypedData groupData;
+  String path;
+
+  SignInitMsg(this.algorithm, Uint8List groupData, this.path)
+      : groupData = TransferableTypedData.fromList([groupData]);
 }
 
 class ProtocolUpdate {
@@ -122,6 +145,7 @@ abstract class TaskWorkerThread extends WorkerThread {
       final buf = alloc<Uint8>(data.length);
       buf.asTypedList(data.length).setAll(0, data);
 
+      // FIXME: handle errors
       print('update protocol');
       final outBuf = mpcLib.protocol_update(_proto, buf, data.length);
 
@@ -147,9 +171,50 @@ class GroupWorkerThread extends TaskWorkerThread {
     _proto = mpcLib.protocol_new(message.algorithm);
   }
 
-  void _finish() {}
+  // TODO: add wrapper class?
+  TransferableTypedData _finish() {
+    final buf = mpcLib.protocol_result(_proto);
+    final trans = TransferableTypedData.fromList(
+      [buf.ptr.asTypedList(buf.len)],
+    );
+
+    mpcLib.protocol_free(_proto);
+    _proto = nullptr;
+
+    return trans;
+  }
 
   static void entryPoint(SendPort sendPort) {
     GroupWorkerThread(sendPort);
+  }
+}
+
+class SignWorkerThread extends TaskWorkerThread {
+  SignWorkerThread(SendPort sendPort) : super(sendPort);
+
+  @override
+  handleMessage(message) {
+    if (message is SignInitMsg) return _init(message);
+    if (message is ProtocolUpdate) return _updateProtocol(message);
+    if (message is TaskFinishMsg) return _finish();
+  }
+
+  void _init(SignInitMsg message) {
+    // TODO: same as above, how to avoid copies?
+    final data = message.groupData.materialize().asUint8List();
+    using((Arena alloc) {
+      final buf = alloc<Uint8>(data.length);
+      buf.asTypedList(data.length).setAll(0, data);
+      _proto = mpcLib.group_sign(message.algorithm, buf, data.length);
+    });
+  }
+
+  void _finish() {
+    // TODO: insert signature
+    mpcLib.protocol_free(_proto);
+  }
+
+  static void entryPoint(SendPort sendPort) {
+    SignWorkerThread(sendPort);
   }
 }
