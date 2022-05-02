@@ -111,6 +111,16 @@ class GroupInitMsg {
   GroupInitMsg(this.algorithm);
 }
 
+class PayloadMsg {
+  TransferableTypedData _data;
+
+  PayloadMsg(Uint8List data) : _data = TransferableTypedData.fromList([data]);
+
+  Uint8List deliver() => _data.materialize().asUint8List();
+}
+
+// TODO: make classes with TransData extend PayloadMsg
+
 class SignInitMsg {
   int algorithm;
   TransferableTypedData groupData;
